@@ -9,6 +9,8 @@ from pathlib import Path
 class RequirementsParser:
     def __init__(self, filepath):
         self.filepath = Path(filepath)
+        
+        # Regex pattern to match package names and versions
         self.pattern = re.compile(r'^([a-zA-Z0-9_\-\.]+)(.*)$')
     
     def parse(self):
@@ -31,6 +33,7 @@ class RequirementsParser:
             if not line or line.startswith('#'):
                 continue
             
+            # Handle editable installs (-e .) and git URLs
             if line.startswith('-e') or line.startswith('git+'):
                 dependencies.append({
                     'line_number': line_num,
@@ -44,15 +47,26 @@ class RequirementsParser:
             if line.startswith('-'):
                 continue
             
+            # parse normal package specification
             match = self.pattern.match(line)
             if match:
                 package_name = match.group(1)
                 version_spec = match.group(2).strip()
                 
+                operator = None
+                version = None
+                if version_spec:
+                    op_match = re.match(r'^([=<>!~]+)(.+)$', version_spec)
+                    if op_match:
+                        operator = op_match.group(1)
+                        version = op_match.group(2).strip()
+                
                 dependencies.append({
                     'line_number': line_num,
                     'package': package_name,
-                    'version_spec': version_spec if version_spec else '',
+                    'version_spec': version_spec,
+                    'operator': operator,
+                    'version': version,
                     'raw_line': original_line.strip(),
                     'is_editable': False
                 })

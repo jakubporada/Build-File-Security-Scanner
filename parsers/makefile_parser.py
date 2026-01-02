@@ -29,7 +29,6 @@ class MakefileParser:
                 i += 1
                 continue
             
-            # Handle line continuations
             while line.rstrip().endswith('\\') and i + 1 < len(lines):
                 line = line.rstrip()[:-1] + ' ' + lines[i + 1].lstrip()
                 i += 1
@@ -79,7 +78,7 @@ class MakefileParser:
     
     def expand_variables(self, text):
         """Expand Makefile variables like $(VAR) or ${VAR}"""
-        # Simple variable expansion
+        # Simple variable stuff doesnt handle everything
         for var_name, var_value in self.variables.items():
             text = text.replace(f'$({var_name})', var_value)
             text = text.replace(f'${{{var_name}}}', var_value)

@@ -1,0 +1,27 @@
+# Example requirements.txt with various patterns (some suspicious)
+
+# Good packages with proper versioning
+flask==2.3.0
+requests>=2.28.0
+numpy==1.24.0
+pandas~=2.0.0
+
+# VULNERABLE: Flask 2.2.0 has CVE-2023-30861
+flask==2.2.0
+
+# SUSPICIOUS: Common typosquatting attempt
+request==1.0.0
+
+# Good package but unpinned (security risk)
+beautifulsoup4
+
+# Another typosquatting example
+urlib3==1.0.0
+
+# Editable/local package (safe but flagged)
+-e .
+
+# Good packages
+django==4.2.0
+pytest>=7.0.0
+black==23.0.0

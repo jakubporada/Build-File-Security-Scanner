@@ -115,7 +115,6 @@ def analyze_requirements(filepath, verbose=False):
                 'description': f"{vuln['cve_id']}: {vuln['description']}"
             })
     
-    # Typosquatting checks
     for dep in dependencies:
         if dep['is_editable']:
             continue
@@ -190,11 +189,9 @@ def find_build_files(directory):
     makefiles = []
     requirements = []
     
-    # Find Makefiles
     for pattern in ['**/Makefile', '**/makefile', '**/GNUmakefile']:
         makefiles.extend(directory.glob(pattern))
     
-    # Find requirements.txt files
     requirements.extend(directory.glob('**/requirements*.txt'))
     
     return makefiles, requirements
@@ -271,7 +268,6 @@ def scan_github_repo(repo_url, verbose=False):
                 cve_checker = CVEChecker()
                 cve_results = cve_checker.check_all_packages(dependencies)
                 
-                # Check for typosquatting
                 typosquatting_map = {
                     'request': 'requests', 'requets': 'requests', 'pythonrequest': 'requests',
                     'urlib3': 'urllib3', 'urllib': 'urllib3',
@@ -290,7 +286,6 @@ def scan_github_repo(repo_url, verbose=False):
                         print(f"    [CRITICAL] CVE: {vuln_pkg['package']}")
                         print(f"      {vuln['cve_id']}: {vuln['description']}")
                 
-                # Check typosquatting
                 for dep in dependencies:
                     if not dep['is_editable'] and dep['package'].lower() in typosquatting_map:
                         file_issues += 1
@@ -303,7 +298,6 @@ def scan_github_repo(repo_url, verbose=False):
                 
                 print(f"   Packages: {len(dependencies)}, Issues: {file_issues}\n")
         
-        # Final summary
         print("="*60)
         print("SCAN SUMMARY")
         print("="*60)
@@ -316,7 +310,6 @@ def scan_github_repo(repo_url, verbose=False):
             print(f"\n   No security issues detected")
         
     finally:
-        # Cleanup
         print(f"\n Cleaning up temporary files...")
         shutil.rmtree(temp_dir, ignore_errors=True)
         print(" Done\n")
@@ -335,7 +328,6 @@ def main():
     
     args = parser.parse_args()
     
-    # Check if it's a GitHub URL
     if is_github_url(args.file):
         scan_github_repo(args.file, args.verbose)
         return

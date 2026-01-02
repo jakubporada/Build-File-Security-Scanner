@@ -7,6 +7,7 @@ import re
 
 class SecurityAnalyzer:
     def __init__(self):
+        # sus patterns to detect in build commands
         self.patterns = {
             'shell_injection': {
                 'regex': r'curl.*\|.*sh|wget.*\|.*sh',
@@ -50,27 +51,43 @@ class SecurityAnalyzer:
             }
         }
     
-    def analyze(self, parsed_makefile):
-        """Analyze parsed Makefile for security issues"""
+    def analyze(self, parsed_data):
+        """Analyze parsed build data for security issues"""
         issues = []
         
-        for target_name, target_info in parsed_makefile.get('targets', {}).items():
-            for cmd_info in target_info['commands']:
+        for target_name, target_info in parsed_data.get('targets', {}).items():
+            for cmd_idx, cmd_info in enumerate(target_info['commands']):
                 command = cmd_info['command']
-                line_number = cmd_info['line_number']
                 
                 for pattern_name, pattern_info in self.patterns.items():
                     if re.search(pattern_info['regex'], command, re.IGNORECASE):
                         issues.append({
-                            'type': pattern_name.replace('_', ' ').title(),
+                            'type': pattern_name,
                             'severity': pattern_info['severity'],
                             'description': pattern_info['description'],
-                            'command': command,
                             'target': target_name,
-                            'line_number': line_number
+                            'command_num': cmd_idx + 1,
+                            'command': command,
+                            'line_number': cmd_info['line_number']
                         })
+        
+        # Sort issues by severity
+        severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+        issues.sort(key=lambda x: severity_order.get(x['severity'], 999))
         
         return {
             'issues': issues,
-            'total_issues': len(issues)
+            'total_issues': len(issues),
+            'critical_count': sum(1 for i in issues if i['severity'] == 'critical'),
+            'high_count': sum(1 for i in issues if i['severity'] == 'high'),
+            'medium_count': sum(1 for i in issues if i['severity'] == 'medium'),
+            'low_count': sum(1 for i in issues if i['severity'] == 'low')
+        }
+    
+    def add_custom_pattern(self, name, regex, description, severity='medium'):
+        """Allow users to add their own suspicious patterns"""
+        self.patterns[name] = {
+            'regex': regex,
+            'description': description,
+            'severity': severity
         }

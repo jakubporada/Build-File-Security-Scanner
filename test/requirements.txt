@@ -1,0 +1,10 @@
+# Test requirements.txt with vulnerabilities
+flask==2.2.0
+requests==2.3.0
+django==2.2.1
+pyyaml==3.13
+jinja2==2.10
+pillow==8.1.0
+urllib3==1.24.1
+numpy==1.19.0
+requets

@@ -1,1 +1,1 @@
-# Security analyzer modules
+"""analyzers package"""

@@ -9,14 +9,11 @@ from pathlib import Path
 class RequirementsParser:
     def __init__(self, filepath):
         self.filepath = Path(filepath)
-        
-        # Regex pattern to match package names and versions
         self.pattern = re.compile(r'^([a-zA-Z0-9_\-\.]+)(.*)$')
-    
+
     def parse(self):
         """Parse requirements.txt and extract package information"""
         dependencies = []
-        
         try:
             with open(self.filepath, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
@@ -25,15 +22,11 @@ class RequirementsParser:
                 'dependencies': [],
                 'error': f'File not found: {self.filepath}'
             }
-        
         for line_num, line in enumerate(lines, 1):
             original_line = line
             line = line.strip()
-            
             if not line or line.startswith('#'):
                 continue
-            
-            # Handle editable installs (-e .) and git URLs
             if line.startswith('-e') or line.startswith('git+'):
                 dependencies.append({
                     'line_number': line_num,
@@ -43,16 +36,12 @@ class RequirementsParser:
                     'is_editable': True
                 })
                 continue
-            
             if line.startswith('-'):
                 continue
-            
-            # parse normal package specification
             match = self.pattern.match(line)
             if match:
                 package_name = match.group(1)
                 version_spec = match.group(2).strip()
-                
                 operator = None
                 version = None
                 if version_spec:
@@ -60,7 +49,6 @@ class RequirementsParser:
                     if op_match:
                         operator = op_match.group(1)
                         version = op_match.group(2).strip()
-                
                 dependencies.append({
                     'line_number': line_num,
                     'package': package_name,
@@ -70,7 +58,6 @@ class RequirementsParser:
                     'raw_line': original_line.strip(),
                     'is_editable': False
                 })
-        
         return {
             'dependencies': dependencies,
             'total_packages': len(dependencies),

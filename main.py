@@ -19,22 +19,17 @@ from analyzers.cve_checker import CVEChecker
 def analyze_makefile(filepath, verbose=False):
     """Analyze a Makefile for security issues"""
     print(f" Analyzing Makefile: {filepath}\n")
-    
     parser = MakefileParser(filepath)
     parsed_data = parser.parse()
-    
     analyzer = SecurityAnalyzer()
     results = analyzer.analyze(parsed_data)
-    
     print("="*60)
     print("MAKEFILE SECURITY SCAN REPORT")
     print("="*60)
-    
     print(f"\n[Summary]")
     print(f"   Targets found: {len(parsed_data.get('targets', []))}")
     print(f"   Commands analyzed: {parsed_data.get('total_commands', 0)}")
     print(f"   Security issues: {len(results['issues'])}")
-    
     if results['issues']:
         print(f"\n[Security Issues Found: {len(results['issues'])}]")
         for i, issue in enumerate(results['issues'], 1):
@@ -46,7 +41,6 @@ def analyze_makefile(filepath, verbose=False):
             print(f"   Command: {issue['command'][:80]}...")
     else:
         print("\n[No suspicious patterns detected in Makefile]")
-    
     if verbose:
         print(f"\n[All Targets]")
         for target_name, target_info in parsed_data.get('targets', {}).items():
@@ -58,32 +52,23 @@ def analyze_makefile(filepath, verbose=False):
 def analyze_requirements(filepath, verbose=False):
     """Analyze requirements.txt for security issues"""
     print(f" Analyzing requirements.txt: {filepath}\n")
-    
     parser = RequirementsParser(filepath)
     parsed_data = parser.parse()
-    
     if 'error' in parsed_data:
         print(f"Error: {parsed_data['error']}")
         return
-    
     dependencies = parsed_data['dependencies']
-    
-    # Run CVE checking
     print(" Checking for known vulnerabilities...")
     cve_checker = CVEChecker()
     cve_results = cve_checker.check_all_packages(dependencies)
-    
     print("="*60)
     print("REQUIREMENTS.TXT SECURITY SCAN REPORT")
     print("="*60)
-    
     print(f"\n[Summary]")
     print(f"   Total packages: {parsed_data['total_packages']}")
     print(f"   Packages checked for CVEs: {cve_results['total_checked']}")
     print(f"   Vulnerable packages: {len(cve_results['vulnerable_packages'])}")
     print(f"   Total vulnerabilities: {cve_results['total_vulnerabilities']}")
-    
-    # Check for typosquatting aka typpos
     typosquatting_map = {
         'request': 'requests',
         'requets': 'requests',
@@ -101,10 +86,7 @@ def analyze_requirements(filepath, verbose=False):
         'javascrip': 'javascript',
         'telnetlib': 'DANGEROUS',
     }
-    
     issues = []
-    
-    # CVE issues
     for vuln_pkg in cve_results['vulnerable_packages']:
         for vuln in vuln_pkg['vulnerabilities']:
             issues.append({
@@ -114,13 +96,10 @@ def analyze_requirements(filepath, verbose=False):
                 'line_number': vuln_pkg.get('line_number', 'N/A'),
                 'description': f"{vuln['cve_id']}: {vuln['description']}"
             })
-    
     for dep in dependencies:
         if dep['is_editable']:
             continue
-            
         package = dep['package'].lower()
-        
         if package in typosquatting_map:
             issues.append({
                 'severity': 'high',
@@ -129,7 +108,6 @@ def analyze_requirements(filepath, verbose=False):
                 'line_number': dep['line_number'],
                 'description': f"'{dep['package']}' looks like a typo of '{typosquatting_map[package]}'"
             })
-        
         if not dep['version_spec']:
             issues.append({
                 'severity': 'low',
@@ -138,7 +116,6 @@ def analyze_requirements(filepath, verbose=False):
                 'line_number': dep['line_number'],
                 'description': f"Package '{dep['package']}' has no version specified"
             })
-    
     if issues:
         print(f"\n[Security Issues Found: {len(issues)}]")
         for i, issue in enumerate(issues, 1):
@@ -149,7 +126,6 @@ def analyze_requirements(filepath, verbose=False):
             print(f"   Description: {issue['description']}")
     else:
         print("\n[No security issues detected]")
-    
     if verbose:
         print(f"\n[All Dependencies]")
         for dep in dependencies:
@@ -188,12 +164,9 @@ def find_build_files(directory):
     directory = Path(directory)
     makefiles = []
     requirements = []
-    
     for pattern in ['**/Makefile', '**/makefile', '**/GNUmakefile']:
         makefiles.extend(directory.glob(pattern))
-    
     requirements.extend(directory.glob('**/requirements*.txt'))
-    
     return makefiles, requirements
 
 def scan_github_repo(repo_url, verbose=False):
@@ -202,39 +175,28 @@ def scan_github_repo(repo_url, verbose=False):
     print("GITHUB REPOSITORY SECURITY SCAN")
     print("="*60)
     print(f"Repository: {repo_url}\n")
-    
     temp_dir = tempfile.mkdtemp(prefix='file-analyzer-')
-    
     try:
         if not clone_github_repo(repo_url, temp_dir):
             return
-        
         makefiles, requirements = find_build_files(temp_dir)
-        
         print(f" Found {len(makefiles)} Makefile(s) and {len(requirements)} requirements.txt file(s)\n")
-        
         if not makefiles and not requirements:
             print("[!] No build files found in repository")
             return
-        
         total_issues = 0
-        
-        # Scan Makefiles
         if makefiles:
             print("="*60)
             print("SCANNING MAKEFILES")
             print("="*60 + "\n")
-            
             for i, makefile in enumerate(makefiles, 1):
                 rel_path = makefile.relative_to(temp_dir)
                 print(f"[{i}/{len(makefiles)}] {rel_path}")
                 print("-" * 60)
-                
                 parser = MakefileParser(makefile)
                 parsed_data = parser.parse()
                 analyzer = SecurityAnalyzer()
                 results = analyzer.analyze(parsed_data)
-                
                 if results['issues']:
                     total_issues += len(results['issues'])
                     print(f"    {len(results['issues'])} issue(s) found:")
@@ -245,29 +207,22 @@ def scan_github_repo(repo_url, verbose=False):
                     print()
                 else:
                     print(f"   No issues found\n")
-        
-        # Scan requirements.txt files
         if requirements:
             print("="*60)
             print("SCANNING REQUIREMENTS.TXT FILES")
             print("="*60 + "\n")
-            
             for i, req_file in enumerate(requirements, 1):
                 rel_path = req_file.relative_to(temp_dir)
                 print(f"[{i}/{len(requirements)}] {rel_path}")
                 print("-" * 60)
-                
                 parser = RequirementsParser(req_file)
                 parsed_data = parser.parse()
-                
                 if 'error' in parsed_data:
                     print(f"  Error: {parsed_data['error']}\n")
                     continue
-                
                 dependencies = parsed_data['dependencies']
                 cve_checker = CVEChecker()
                 cve_results = cve_checker.check_all_packages(dependencies)
-                
                 typosquatting_map = {
                     'request': 'requests', 'requets': 'requests', 'pythonrequest': 'requests',
                     'urlib3': 'urllib3', 'urllib': 'urllib3',
@@ -275,40 +230,31 @@ def scan_github_repo(repo_url, verbose=False):
                     'nump': 'numpy', 'numpi': 'numpy',
                     'panda': 'pandas', 'pandsa': 'pandas',
                 }
-                
                 file_issues = 0
-                
-                # Check CVEs
                 for vuln_pkg in cve_results['vulnerable_packages']:
                     for vuln in vuln_pkg['vulnerabilities']:
                         file_issues += 1
                         total_issues += 1
                         print(f"    [CRITICAL] CVE: {vuln_pkg['package']}")
                         print(f"      {vuln['cve_id']}: {vuln['description']}")
-                
                 for dep in dependencies:
                     if not dep['is_editable'] and dep['package'].lower() in typosquatting_map:
                         file_issues += 1
                         total_issues += 1
                         print(f"     [HIGH] Typosquatting: {dep['package']}")
                         print(f"      Looks like '{typosquatting_map[dep['package'].lower()]}'")
-                
                 if file_issues == 0:
                     print(f"  No issues found")
-                
                 print(f"   Packages: {len(dependencies)}, Issues: {file_issues}\n")
-        
         print("="*60)
         print("SCAN SUMMARY")
         print("="*60)
         print(f"   Total files scanned: {len(makefiles) + len(requirements)}")
         print(f"   Total security issues: {total_issues}")
-        
         if total_issues > 0:
             print(f"\n    Repository has security concerns!")
         else:
             print(f"\n   No security issues detected")
-        
     finally:
         print(f"\n Cleaning up temporary files...")
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -325,22 +271,15 @@ def main():
     )
     parser.add_argument('file', help='Path to build file or GitHub repository URL')
     parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
-    
     args = parser.parse_args()
-    
     if is_github_url(args.file):
         scan_github_repo(args.file, args.verbose)
         return
-    
-    # Otherwise treat as local file
     file_path = Path(args.file)
     if not file_path.exists():
         print(f"Error: File '{args.file}' not found", file=sys.stderr)
         sys.exit(1)
-    
-    # to determine file path
     filename = file_path.name.lower()
-    
     if 'makefile' in filename or filename == 'gnumakefile':
         analyze_makefile(file_path, args.verbose)
     elif 'requirements' in filename and filename.endswith('.txt'):

@@ -1,15 +1,9 @@
-"""
-CVE Checker
-Checks packages against known vulnerability databases
-"""
-
 import subprocess
 import json
 import re
 
 class CVEChecker:
     def __init__(self):
-        # Expanded list of known vulnerable packages for offline checking
         self.known_vulnerable = {
             'flask': [
                 (['2.2.0', '2.2.1', '2.2.2', '2.2.3', '2.2.4', '2.2.5'], 'CVE-2023-30861', 'Cookie parsing vulnerability leading to possible session hijacking'),
@@ -101,11 +95,8 @@ class CVEChecker:
         """
         issues = []
         package_lower = package_name.lower()
-        
         if package_lower not in self.known_vulnerable:
             return issues
-        
-        # Check against known vulnerable versions
         for vuln_versions, cve_id, description in self.known_vulnerable[package_lower]:
             if version and version in vuln_versions:
                 issues.append({
@@ -114,7 +105,6 @@ class CVEChecker:
                     'vulnerable_version': version,
                     'package': package_name
                 })
-        
         return issues
     
     def check_version_range(self, package_name, operator, version):
@@ -124,11 +114,8 @@ class CVEChecker:
         """
         warnings = []
         package_lower = package_name.lower()
-        
         if package_lower not in self.known_vulnerable:
             return warnings
-        
-        # For >= or > operators, warn if the minimum version is vulnerable
         if operator in ['>=', '>']:
             issues = self.check_package(package_name, version)
             if issues:
@@ -139,7 +126,6 @@ class CVEChecker:
                     'version': version,
                     'message': f'Version range {operator}{version} may include vulnerable versions'
                 })
-        
         return warnings
     
     def check_all_packages(self, dependencies):
@@ -153,23 +139,16 @@ class CVEChecker:
             'total_vulnerabilities': 0,
             'warnings': []
         }
-        
         for dep in dependencies:
             if dep.get('is_editable'):
                 continue
-            
             package = dep['package']
             version = dep.get('version', '').strip() if dep.get('version') else None
             operator = dep.get('operator')
-            
             results['total_checked'] += 1
-            
             if not version:
                 continue
-            
-            # Check for exact version vulnerabilities
             vulns = self.check_package(package, version)
-            
             if vulns:
                 results['vulnerable_packages'].append({
                     'package': package,
@@ -178,11 +157,9 @@ class CVEChecker:
                     'vulnerabilities': vulns
                 })
                 results['total_vulnerabilities'] += len(vulns)
-            
             if operator:
                 warnings = self.check_version_range(package, operator, version)
                 results['warnings'].extend(warnings)
-        
         return results
     
     def try_safety_check(self, requirements_file):
@@ -197,7 +174,6 @@ class CVEChecker:
                 text=True,
                 timeout=10
             )
-            
             if result.returncode == 0 or result.returncode == 64:
                 try:
                     safety_data = json.loads(result.stdout)
@@ -206,7 +182,6 @@ class CVEChecker:
                     pass
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
-        
         return None
     
     def _parse_safety_output(self, safety_data):
@@ -216,14 +191,12 @@ class CVEChecker:
             'vulnerable_packages': [],
             'total_vulnerabilities': 0
         }
-        
         if isinstance(safety_data, list):
             for vuln in safety_data:
                 pkg_name = vuln.get('package', 'unknown')
                 version = vuln.get('installed_version', 'unknown')
                 cve = vuln.get('cve', 'N/A')
                 description = vuln.get('advisory', 'No description')
-                
                 results['vulnerable_packages'].append({
                     'package': pkg_name,
                     'version': version,
@@ -234,14 +207,12 @@ class CVEChecker:
                     }]
                 })
                 results['total_vulnerabilities'] += 1
-        
         return results
     
     def get_database_stats(self):
         """Return statistics about the CVE database"""
         total_packages = len(self.known_vulnerable)
         total_cves = sum(len(vulns) for vulns in self.known_vulnerable.values())
-        
         return {
             'total_packages_tracked': total_packages,
             'total_cves': total_cves,

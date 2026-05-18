@@ -89,10 +89,6 @@ class CVEChecker:
         }
     
     def check_package(self, package_name, version):
-        """
-        Check if a specific package version has known vulnerabilities
-        Returns list of CVE issues found
-        """
         issues = []
         package_lower = package_name.lower()
         if package_lower not in self.known_vulnerable:
@@ -108,10 +104,6 @@ class CVEChecker:
         return issues
     
     def check_version_range(self, package_name, operator, version):
-        """
-        Check if a version range might include vulnerable versions
-        Returns warnings for potentially vulnerable ranges
-        """
         warnings = []
         package_lower = package_name.lower()
         if package_lower not in self.known_vulnerable:
@@ -129,10 +121,6 @@ class CVEChecker:
         return warnings
     
     def check_all_packages(self, dependencies):
-        """
-        Check all packages in a dependency list
-        Returns dictionary with vulnerability info
-        """
         results = {
             'total_checked': 0,
             'vulnerable_packages': [],
@@ -163,10 +151,6 @@ class CVEChecker:
         return results
     
     def try_safety_check(self, requirements_file):
-        """
-        Try to use 'safety' CLI tool if available for real-time CVE checking
-        Falls back to hardcoded database if safety is not installed
-        """
         try:
             result = subprocess.run(
                 ['safety', 'check', '--file', requirements_file, '--json'],
@@ -185,7 +169,6 @@ class CVEChecker:
         return None
     
     def _parse_safety_output(self, safety_data):
-        """Parse the JSON output from safety CLI"""
         results = {
             'total_checked': 0,
             'vulnerable_packages': [],
@@ -210,7 +193,6 @@ class CVEChecker:
         return results
     
     def get_database_stats(self):
-        """Return statistics about the CVE database"""
         total_packages = len(self.known_vulnerable)
         total_cves = sum(len(vulns) for vulns in self.known_vulnerable.values())
         return {

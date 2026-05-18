@@ -1,8 +1,3 @@
-"""
-Makefile Parser
-Extracts targets, dependencies, and commands from Makefiles
-"""
-
 import re
 from pathlib import Path
 
@@ -13,7 +8,6 @@ class MakefileParser:
         self.variables = {}
 
     def parse(self):
-        """Parse the Makefile and extract all information"""
         with open(self.filepath, 'r', encoding='utf-8', errors='ignore') as f:
             lines = f.readlines()
         current_target = None
@@ -64,7 +58,6 @@ class MakefileParser:
         }
 
     def expand_variables(self, text):
-        """Expand Makefile variables like $(VAR) or ${VAR}"""
         for var_name, var_value in self.variables.items():
             text = text.replace(f'$({var_name})', var_value)
             text = text.replace(f'${{{var_name}}}', var_value)

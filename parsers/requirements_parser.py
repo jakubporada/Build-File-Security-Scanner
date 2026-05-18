@@ -1,8 +1,3 @@
-"""
-Requirements.txt Parser
-Extracts Python package dependencies and version specifications
-"""
-
 import re
 from pathlib import Path
 
@@ -12,7 +7,6 @@ class RequirementsParser:
         self.pattern = re.compile(r'^([a-zA-Z0-9_\-\.]+)(.*)$')
 
     def parse(self):
-        """Parse requirements.txt and extract package information"""
         dependencies = []
         try:
             with open(self.filepath, 'r', encoding='utf-8') as f:

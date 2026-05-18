@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Build File Security Scanner
-Scans Makefiles and requirements.txt for security issues
-"""
 
 import argparse
 import sys
@@ -16,12 +12,11 @@ from parsers.requirements_parser import RequirementsParser
 from analyzers.security_analyzer import SecurityAnalyzer
 from analyzers.cve_checker import CVEChecker
 
-def analyze_makefile(filepath, verbose=False):
-    """Analyze a Makefile for security issues"""
+def analyze_makefile(filepath, verbose=False, patterns_file=None):
     print(f" Analyzing Makefile: {filepath}\n")
     parser = MakefileParser(filepath)
     parsed_data = parser.parse()
-    analyzer = SecurityAnalyzer()
+    analyzer = SecurityAnalyzer(patterns_file=patterns_file)
     results = analyzer.analyze(parsed_data)
     print("="*60)
     print("MAKEFILE SECURITY SCAN REPORT")
@@ -50,7 +45,6 @@ def analyze_makefile(filepath, verbose=False):
             print(f"   Commands: {len(target_info['commands'])}")
 
 def analyze_requirements(filepath, verbose=False):
-    """Analyze requirements.txt for security issues"""
     print(f" Analyzing requirements.txt: {filepath}\n")
     parser = RequirementsParser(filepath)
     parsed_data = parser.parse()
@@ -136,12 +130,10 @@ def analyze_requirements(filepath, verbose=False):
                 print(f"\n   {dep['package']}: {version}")
 
 def is_github_url(url):
-    """Check if string is a GitHub URL"""
     github_pattern = r'https?://github\.com/[\w\-]+/[\w\-\.]+'
     return re.match(github_pattern, url) is not None
 
 def clone_github_repo(repo_url, target_dir):
-    """Clone a GitHub repository"""
     print(f" Cloning repository: {repo_url}")
     try:
         subprocess.run(
@@ -160,7 +152,6 @@ def clone_github_repo(repo_url, target_dir):
         return False
 
 def find_build_files(directory):
-    """Recursively find all Makefiles and requirements.txt files"""
     directory = Path(directory)
     makefiles = []
     requirements = []
@@ -169,8 +160,7 @@ def find_build_files(directory):
     requirements.extend(directory.glob('**/requirements*.txt'))
     return makefiles, requirements
 
-def scan_github_repo(repo_url, verbose=False):
-    """Clone and scan a GitHub repository"""
+def scan_github_repo(repo_url, verbose=False, patterns_file=None):
     print("="*60)
     print("GITHUB REPOSITORY SECURITY SCAN")
     print("="*60)
@@ -195,7 +185,7 @@ def scan_github_repo(repo_url, verbose=False):
                 print("-" * 60)
                 parser = MakefileParser(makefile)
                 parsed_data = parser.parse()
-                analyzer = SecurityAnalyzer()
+                analyzer = SecurityAnalyzer(patterns_file=patterns_file)
                 results = analyzer.analyze(parsed_data)
                 if results['issues']:
                     total_issues += len(results['issues'])
@@ -271,9 +261,10 @@ def main():
     )
     parser.add_argument('file', help='Path to build file or GitHub repository URL')
     parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+    parser.add_argument('--patterns-file', help='Path to JSON file with security patterns')
     args = parser.parse_args()
     if is_github_url(args.file):
-        scan_github_repo(args.file, args.verbose)
+        scan_github_repo(args.file, args.verbose, patterns_file=args.patterns_file)
         return
     file_path = Path(args.file)
     if not file_path.exists():
@@ -281,7 +272,7 @@ def main():
         sys.exit(1)
     filename = file_path.name.lower()
     if 'makefile' in filename or filename == 'gnumakefile':
-        analyze_makefile(file_path, args.verbose)
+        analyze_makefile(file_path, args.verbose, patterns_file=args.patterns_file)
     elif 'requirements' in filename and filename.endswith('.txt'):
         analyze_requirements(file_path, args.verbose)
     else:

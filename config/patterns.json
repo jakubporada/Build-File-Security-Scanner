@@ -1,0 +1,42 @@
+{
+  "shell_injection": {
+    "regex": "\\b(curl|wget)\\b[^|]*\\|\\s*(sh|bash)\\b",
+    "description": "Command pipes downloaded content directly to shell",
+    "severity": "critical"
+  },
+  "stealth_download": {
+    "regex": "\\b(curl|wget)\\b[^\\n]*&&\\s*chmod\\s+\\+x\\b",
+    "description": "Downloads file and makes it executable",
+    "severity": "high"
+  },
+  "obfuscation": {
+    "regex": "\\b(base64\\s+(-d|--decode)|eval\\s*\\()",
+    "description": "Uses obfuscation techniques (base64 decode or eval)",
+    "severity": "high"
+  },
+  "tmp_execution": {
+    "regex": "/tmp/\\S+[^\\n]*&&\\s*(chmod\\s+\\+x|\\./|/tmp/)",
+    "description": "Creates and executes files in /tmp directory",
+    "severity": "medium"
+  },
+  "remote_exec": {
+    "regex": "\\b(bash|sh)\\s*<\\s*\\(\\s*(curl|wget)\\b",
+    "description": "Executes remote script without saving locally",
+    "severity": "critical"
+  },
+  "suspicious_download": {
+    "regex": "\\b(curl\\s+-s\\S*|wget\\s+-q\\S*)\\b[^\\n]*https?://",
+    "description": "Silent download from remote URL (may hide activity)",
+    "severity": "medium"
+  },
+  "hidden_file": {
+    "regex": "(>>|>)\\s*\\.[\\w.-]+|\\s\\.[\\w.-]+=",
+    "description": "Writes to hidden file (starts with dot)",
+    "severity": "low"
+  },
+  "network_access": {
+    "regex": "\\b(nc|ncat|netcat)\\b",
+    "description": "Uses netcat for network connections",
+    "severity": "medium"
+  }
+}
